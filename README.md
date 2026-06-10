@@ -178,6 +178,11 @@ Use managed PostgreSQL (Supabase, Neon, Railway) and update `DATABASE_URL`.
 3. Add `GOOGLE_CLIENT_ID` to backend `.env`
 4. Add Google Sign-In button to frontend login page
 
+## Deployment
+Frontend: https://aurora-ai-health-companion.vercel.app/
+Backend: https://aurora-backend-lkgd.onrender.com
+Database: https://console.neon.tech/
+
 ## License
 
 MIT
