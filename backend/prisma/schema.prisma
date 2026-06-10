@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum NotificationType {
+  HYDRATION
+  SLEEP
+  HABIT
+  AI_INSIGHT
+  ACHIEVEMENT
+  SYSTEM
+}
+
+enum AchievementType {
+  HYDRATION
+  SLEEP
+  HABIT
+  NUTRITION
+  STREAK
+  CONSISTENCY
+  MILESTONE
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String?
+  name          String
+  avatar        String?
+  googleId      String?   @unique
+  role          Role      @default(USER)
+  emailVerified Boolean   @default(false)
+  resetToken    String?
+  resetExpires  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  healthProfile    HealthProfile?
+  waterLogs        WaterLog[]
+  sleepLogs        SleepLog[]
+  habits           Habit[]
+  habitCompletions HabitCompletion[]
+  nutritionLogs    NutritionLog[]
+  aiConversations  AiConversation[]
+  aiMemories       AiMemory[]
+  healthMemories   HealthMemory[]
+  notifications    Notification[]
+  achievements     UserAchievement[]
+  streaks          Streak[]
+
+  @@index([email])
+}
+
+model HealthProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  age                Int?
+  gender             String?
+  height             Float?
+  weight             Float?
+  wakeTime           String?
+  bedTime            String?
+  activityLevel      String?
+  healthGoals        Json?
+  notifyHydration    Boolean  @default(true)
+  notifySleep        Boolean  @default(true)
+  notifyHabits       Boolean  @default(true)
+  notifyAiInsights   Boolean  @default(true)
+  trackingMethod     String   @default("manual")
+  dailyWaterGoal     Int      @default(2500)
+  dailySleepGoal     Float    @default(8)
+  dailyCalorieGoal   Int      @default(2000)
+  healthScore        Int      @default(75)
+  profileCompletion  Int      @default(0)
+  onboardingDone     Boolean  @default(false)
+  healthSetupDone    Boolean  @default(false)
+  theme              String   @default("dark")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model HealthMemory {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    String
+  patternType String
+  title       String
+  content     String
+  metricValue Float?
+  metricUnit  String?
+  confidence  Int      @default(3)
+  period      String   @default("weekly")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, category])
+  @@index([userId, createdAt])
+}
+
+model WaterLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  note      String?
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+model SleepLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hours        Float
+  quality      Int      @default(3)
+  bedTime      DateTime?
+  wakeTime     DateTime?
+  note         String?
+  loggedAt     DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+model Habit {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  icon        String   @default("✨")
+  color       String   @default("#6366f1")
+  frequency   String   @default("daily")
+  targetDays  Int      @default(7)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  completions HabitCompletion[]
+  streak      Streak?
+
+  @@index([userId])
+}
+
+model HabitCompletion {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitId     String
+  habit       Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+  note        String?
+
+  @@unique([habitId, completedAt])
+  @@index([userId, completedAt])
+}
+
+model NutritionLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealName  String
+  mealType  String   @default("snack")
+  calories  Int      @default(0)
+  protein   Float    @default(0)
+  carbs     Float    @default(0)
+  fat       Float    @default(0)
+  note      String?
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+model AiConversation {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model AiMemory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String
+  content   String
+  importance Int     @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, category])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+model Achievement {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  description String
+  icon        String
+  type        AchievementType
+  threshold   Int
+  createdAt   DateTime        @default(now())
+
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model Streak {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitId       String?  @unique
+  habit         Habit?   @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  type          String   @default("habit")
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastActive    DateTime?
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
